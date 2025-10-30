@@ -33,8 +33,9 @@ public class MultiTalkServer
 			// 等待客户端连接
 			socket = serverSocket.accept();
 			clientNumber++;  // 增加客户端计数
+			String clientIP = socket.getInetAddress().getHostAddress();
 			// 为每个客户端创建新的线程处理
-			new MultiTalkServerThread(socket, clientNumber).start();
+			new MultiTalkServerThread(socket, clientNumber,clientIP).start();
 		}
         // 关闭服务器套接字
         serverSocket.close();
@@ -49,18 +50,20 @@ class MultiTalkServerThread extends Thread
 {
 	private Socket socket = null;        // 客户端套接字
 	private int clientNumber;            // 客户端编号
+	private String clientIP; // 客户端IP地址
 
 	/**
 	 * 构造函数
 	 * @param socket 客户端套接字
 	 * @param clientNumber 客户端编号
 	 */
-	public MultiTalkServerThread(Socket socket, int clientNumber)
+	public MultiTalkServerThread(Socket socket, int clientNumber,String clientIP)
 	{
 		super("MultiTalkServerThread");  // 设置线程名称
 		this.socket = socket;
 		this.clientNumber = clientNumber;
 		System.out.println("接受客户端" + clientNumber + "连接");
+		this.clientIP = clientIP;
 	}
 
 	/**
@@ -86,10 +89,10 @@ class MultiTalkServerThread extends Thread
 			        
 			// 读取客户端的第一条消息
 			inputLine = in.readLine();
-			System.out.println( "来自客户端" + clientNumber + ": " + inputLine );
-
+			// System.out.println( "来自客户端" + clientNumber + ": " + inputLine );
+			
 			// 通信循环
-			while( true )
+			do
 			{
 				// 如果客户端发送"Bye."，则结束对话
 				if(inputLine.equals("Bye."))
@@ -104,7 +107,7 @@ class MultiTalkServerThread extends Thread
 				else
 				{
 					// 正常回复客户端消息
-					sinputLine = "回复客户端 " + clientNumber +" : " + inputLine;
+					sinputLine = "["+ clientIP + "] : " + inputLine;
 					out.println(sinputLine); // 发送回复
 					out.flush();            // 刷新输出流
 					System.out.println("服务器: " + sinputLine);
@@ -118,9 +121,9 @@ class MultiTalkServerThread extends Thread
 				if( inbye == false )
 				{
 					inputLine = in.readLine();
-					System.out.println( "来自客户端 " + clientNumber + ": " + inputLine );
+					System.out.println( "["+ clientIP + "] : " + inputLine );
 				}
-			}
+			}while(true);
 
 			// 关闭所有流和套接字
 			out.close();
