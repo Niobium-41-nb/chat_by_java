@@ -26,9 +26,11 @@ public class MultiTalkServer
         try {
             serverSocket = new ServerSocket(8898);
             System.out.println("多线程聊天服务器已启动，正在监听端口8898...");
+            WriteLog.write("chat.log", "多线程聊天服务器已启动，正在监听端口8898...");
         }
         catch (IOException e){
             System.err.println("无法在端口8898上监听。");
+            WriteLog.write("chat.log", "无法在端口8898上监听。");
             System.exit(-1);
         }
 
@@ -47,6 +49,7 @@ public class MultiTalkServer
 			
 			// 广播新客户端加入信息
 			broadcastMessage("服务器", "客户端" + clientNumber + "(IP: " + clientIP + ") 已加入聊天室");
+            WriteLog.write("chat.log", "客户端" + clientNumber + "(IP: " + clientIP + ") 已加入聊天室");
 		}
         // 关闭服务器套接字
         serverSocket.close();
@@ -60,6 +63,8 @@ public class MultiTalkServer
     public static void broadcastMessage(String sender, String message) {
         String formattedMessage = "[" + sender + "]: " + message;
         System.out.println(formattedMessage);
+        
+        WriteLog.write("chat.log",formattedMessage);
         
         // 遍历所有客户端，发送消息
         for (MultiTalkServerThread client : clientList) {
@@ -75,6 +80,7 @@ public class MultiTalkServer
         clientList.remove(client);
         // 广播客户端离开信息
         broadcastMessage("服务器", "客户端" + client.getClientNumber() + "(IP: " + client.getClientIP() + ") 已离开聊天室");
+        WriteLog.write("chat.log","客户端" + client.getClientNumber() + "(IP: " + client.getClientIP() + ") 已离开聊天室");
     }
     
     /**
@@ -88,6 +94,7 @@ public class MultiTalkServer
                 String serverMessage;
                 
                 System.out.println("服务器控制台已启动，可以输入消息进行广播（输入'quit'退出）");
+                WriteLog.write("chat.log","服务器控制台已启动，可以输入消息进行广播（输入'quit'退出）");
                 
                 while ((serverMessage = consoleInput.readLine()) != null) {
                     if (serverMessage.equalsIgnoreCase("quit")) {
@@ -96,6 +103,7 @@ public class MultiTalkServer
                     }
                     // 广播服务器消息
                     broadcastMessage("服务器", serverMessage);
+                    WriteLog.write("chat.log",serverMessage);
                 }
                 
                 consoleInput.close();
@@ -131,6 +139,7 @@ class MultiTalkServerThread extends Thread
 		this.clientNumber = clientNumber;
 		this.clientIP = clientIP;
 		System.out.println("接受客户端" + clientNumber + "(IP: " + clientIP + ") 连接");
+        WriteLog.write("chat.log",clientNumber + "(IP: " + clientIP + ") 连接");
 	}
 
 	/**
@@ -163,12 +172,14 @@ class MultiTalkServerThread extends Thread
 				else {
 					// 广播客户端消息
 					MultiTalkServer.broadcastMessage("客户端" + clientNumber + "(" + clientIP + ")", inputLine);
-				}
+                    // WriteLog.write("chat.log","客户端" + clientNumber + "(" + clientIP + ")"+inputLine);
+                }
 			}
 
 		} catch (IOException e) {
 			System.err.println("与客户端" + clientNumber + "(IP: " + clientIP + ") 通信出错: " + e.getMessage());
-		} finally {
+            WriteLog.write("chat.log","与客户端" + clientNumber + "(IP: " + clientIP + ") 通信出错: " + e.getMessage());
+        } finally {
 			// 关闭所有流和套接字
 			try {
 				if (out != null) out.close();
@@ -179,6 +190,7 @@ class MultiTalkServerThread extends Thread
 			// 从客户端列表中移除
 			MultiTalkServer.removeClient(this);
 			System.out.println("客户端" + clientNumber + "(IP: " + clientIP + ") 连接已关闭");
+            WriteLog.write("chat.log","客户端" + clientNumber + "(IP: " + clientIP + ") 连接已关闭");
 		}
     }
     

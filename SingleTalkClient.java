@@ -229,7 +229,7 @@ public class SingleTalkClient extends JFrame {
     /**
      * 主方法，程序入口
      */
-    public static void main(String[] args) {
+    public void main_() {
         // 在事件调度线程中创建并显示GUI
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
