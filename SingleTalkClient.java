@@ -185,7 +185,7 @@ public class SingleTalkClient extends JFrame {
             String fromServer;
             try {
                 while ((fromServer = in.readLine()) != null && !sbye) {
-                    appendToChat("服务器: " + fromServer + "\n");
+                    appendToChat(fromServer + "\n");
                     
                     if (fromServer.equals("Bye.")) {
                         sbye = true;
