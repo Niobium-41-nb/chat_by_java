@@ -45,41 +45,56 @@ public class SingleTalkClient
 		fromUser = stdIn.readLine();
 			
 		// 通信循环
-		while( true ){
-			// 如果用户没有结束，发送消息给服务器
-			if( ubye == false )
-			{
-				out.println(fromUser);  // 发送用户消息
-				out.flush();            // 刷新输出流
-				//System.out.println("客户端: " + fromUser);  // 可选：显示发送的消息
-				
-				// 如果用户输入"Bye."，设置用户结束标志
-				if (fromUser.equals("Bye."))
-					ubye = true;
-			}
+        while (true) {
+            // 如果服务器没有结束，读取所有可用的服务器消息
+            if (!sbye) {
+                while (in.ready()) { // 循环读取所有可用的消息
+                    fromServer = in.readLine();
+                    if (fromServer == null) {
+                        sbye = true;
+                        break;
+                    }
+                    System.out.println("来自服务器: " + fromServer);
+                    
+                    if (fromServer.equals("Bye.")) {
+                        sbye = true;
+                    }
+                }
+            }
 
-			// 如果服务器没有结束，读取服务器消息
-			if( sbye == false )
-			{
-				fromServer = in.readLine();  // 读取服务器消息
-				System.out.println("来自服务器: " + fromServer);  // 显示服务器消息
-				
-				// 如果服务器发送"Bye."，设置服务器结束标志
-				if (fromServer.equals("Bye."))
-					sbye = true;
-			}
+            // 如果用户没有结束，检查是否有输入
+            if (!ubye) {
+                if (stdIn.ready()) { // 检查标准输入是否有数据可读
+                    System.out.print("客户端输入:");
+                    fromUser = stdIn.readLine();
+                    
+                    out.println(fromUser);
+                    out.flush();
+                    
+                    if (fromUser.equals("Bye.")) {
+                        ubye = true;
+                    }
+                }
+            }
 
-			// 如果用户没有结束，继续获取用户输入
-			if( ubye == false )
-			{
-				System.out.print("客户端输入:");
-				fromUser = stdIn.readLine();  // 读取用户输入
-			}
+            // 短暂休眠，避免CPU过度占用
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
 
-			// 如果双方都发送了结束消息，退出循环
-			if( ubye == true && sbye == true )
-				break;
-		}
+            // 如果双方都发送了结束消息，退出循环
+            if (ubye && sbye) {
+                break;
+            }
+            
+            // 如果服务器单方面断开连接，也退出循环
+            if (sbye && !ubye) {
+                System.out.println("服务器已断开连接");
+                break;
+            }
+        }
 
 		// 关闭所有流和套接字
 		out.close();
