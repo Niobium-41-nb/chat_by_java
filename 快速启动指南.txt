@@ -1,0 +1,50 @@
+=== AI聊天客户端快速启动指南 (v2.0) ===
+
+1. 前提条件检查：
+   - 确保已安装Java 11或更高版本
+   - 确保已安装OLLAMA并下载deepseek-r1:1.5b模型
+
+2. 安装OLLAMA和模型（如果未安装）：
+   - 下载OLLAMA: https://ollama.ai/download
+   - 安装后运行: ollama pull deepseek-r1:1.5b
+
+3. 启动步骤（重要顺序）：
+   a) 首先启动OLLAMA服务：
+      - 运行: ollama serve
+      - 保持此终端窗口打开
+
+   b) 然后启动服务器：
+      - 运行: run.bat 或 start.bat
+      - 或手动: javac MultiTalkServer.java && java MultiTalkServer
+
+   c) 最后启动AI客户端：
+      - 运行: run_ai_client.bat
+      - 或手动: java AITalkClient
+
+   d) 可选：启动普通客户端测试：
+      - javac SingleTalkClient.java
+      - java SingleTalkClient
+
+4. 测试方法：
+   - 在普通客户端中输入消息，必须包含"@AI"标记
+   - 例如: "你好@AI，今天天气怎么样？"
+   - AI客户端会自动回复（有1-3秒延迟）
+   - 所有消息都会广播到所有连接的客户端
+
+5. 故障排除：
+   - 检查OLLAMA服务是否运行: ollama serve
+   - 检查服务器是否在127.0.0.1:8898运行
+   - 测试OLLAMA: ollama run deepseek-r1:1.5b
+   - 查看控制台错误信息
+   - 确认Java版本为11+
+
+=== 重要提示 ===
+- 必须首先运行 "ollama serve" 启动OLLAMA服务
+- AI客户端使用HTTP API与OLLAMA通信（端口11434）
+- 确保所有服务按正确顺序启动
+
+=== 文件说明 ===
+- AITalkClient.java - AI客户端源代码（HTTP API版本）
+- run_ai_client.bat - AI客户端启动脚本
+- test_ai_client.bat - 编译测试脚本
+- AI客户端使用说明.md - 详细技术文档
