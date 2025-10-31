@@ -139,7 +139,7 @@ class MultiTalkServerThread extends Thread
 		}
 		
 		// 查找@符号的位置
-		int atIndex = Message.indexOf('@');
+		int atIndex = Message.indexOf('$');
 		
 		// 如果没有找到@符号，返回null
 		if (atIndex == -1) {

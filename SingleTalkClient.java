@@ -1,106 +1,212 @@
+import java.awt.*;
+import java.awt.event.*;
 import java.io.*;
 import java.net.*;
+import javax.swing.*;
 
-/**
- * 单线程聊天客户端类
- * 连接到服务器进行聊天通信
- */
-public class SingleTalkClient
-{
-    /**
-     * 客户端主方法
-     * @param args 命令行参数
-     * @throws IOException 输入输出异常
-     */
-    public static void main(String[] args) throws IOException
-	{
+public class SingleTalkClient extends JFrame {
+    private Socket client = null;
+    private PrintWriter out = null;
+    private BufferedReader in = null;
+    private boolean connected = false;
+    
+    private JTextArea messageArea; 
+    private JTextField inputField; 
+    private JButton sendButton;   
+    private JTextField serverField; 
+    private JTextField portField;   
+    private JButton connectButton;  
 
-        Socket client = null;        // 客户端套接字
-        PrintWriter out = null;      // 输出流
-        BufferedReader in = null;    // 输入流
+    public SingleTalkClient() {
+        super("聊天客户端");
+        initComponents();
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(600, 500);
+        setLocationRelativeTo(null);
+        setVisible(true);
+    }
 
-        // 连接到服务器
+    private void initComponents() {
+        JPanel connectPanel = new JPanel(new FlowLayout());
+        connectPanel.add(new JLabel("服务器地址:"));
+        serverField = new JTextField("127.0.0.1", 15);
+        connectPanel.add(serverField);
+        connectPanel.add(new JLabel("端口:"));
+        portField = new JTextField("8898", 5);
+        connectPanel.add(portField);
+        connectButton = new JButton("连接");
+        connectPanel.add(connectButton);
+        
+        messageArea = new JTextArea();
+        messageArea.setEditable(false); 
+        JScrollPane scrollPane = new JScrollPane(messageArea);
+        
+        JPanel inputPanel = new JPanel(new BorderLayout());
+        inputField = new JTextField();
+        sendButton = new JButton("发送");
+        sendButton.setEnabled(false); 
+        inputPanel.add(inputField, BorderLayout.CENTER);
+        inputPanel.add(sendButton, BorderLayout.EAST);
+        
+        Container contentPane = getContentPane();
+        contentPane.setLayout(new BorderLayout());
+        contentPane.add(connectPanel, BorderLayout.NORTH);
+        contentPane.add(scrollPane, BorderLayout.CENTER);
+        contentPane.add(inputPanel, BorderLayout.SOUTH);
+        
+        addEventListeners();
+    }
+
+    private void addEventListeners() {
+        connectButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (!connected) {
+                    connectToServer();
+                } else {
+                    disconnectFromServer();
+                }
+            }
+        });
+        
+        sendButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                sendMessage();
+            }
+        });
+        
+        inputField.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                sendMessage();
+            }
+        });
+    }
+
+    private void connectToServer() {
         try {
-            client = new Socket("127.0.0.1", 8898);  // 连接到本地服务器的8898端口
-            out = new PrintWriter(client.getOutputStream(), true); // 自动刷新输出流
+            String server = serverField.getText();
+            int port = Integer.parseInt(portField.getText());
+            
+            client = new Socket(server, port);
+            out = new PrintWriter(client.getOutputStream(), true);
             in = new BufferedReader(new InputStreamReader(client.getInputStream()));
-            System.out.println("已连接到服务器 127.0.0.1:8898");
-        } catch (UnknownHostException e) {
-            System.err.println("未知主机: 127.0.0.1.");
-            System.exit(1);
-        } catch (IOException e) {
-            System.err.println("无法获取到 127.0.0.1 连接的I/O。");
-            System.exit(1);
+            connected = true;
+            
+            appendMessage("已连接到服务器 " + server + ":" + port);
+            connectButton.setText("断开");
+            sendButton.setEnabled(true);
+            serverField.setEnabled(false);
+            portField.setEnabled(false);
+            inputField.requestFocus();
+            
+            startReceiveThread();
+            
+        } catch (UnknownHostException ex) {
+            appendMessage("错误: 未知主机: " + serverField.getText());
+        } catch (IOException ex) {
+            appendMessage("错误: 无法连接到服务器");
+        } catch (NumberFormatException ex) {
+            appendMessage("错误: 端口号格式不正确");
         }
+    }
 
-        // 从标准输入流（控制台）获取客户端输入信息
-		BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
-			
-		String fromServer, fromUser;  // 服务器消息和用户输入
-		boolean sbye = false;         // 服务器结束标志
-		boolean ubye = false;         // 用户结束标志
-
-		// 获取用户的第一条输入
-		System.out.print("客户端输入:");
-		fromUser = stdIn.readLine();
-			
-		// 通信循环
-        while (true) {
-            // 如果服务器没有结束，读取所有可用的服务器消息
-            if (!sbye) {
-                while (in.ready()) { // 循环读取所有可用的消息
-                    fromServer = in.readLine();
-                    if (fromServer == null) {
-                        sbye = true;
-                        break;
-                    }
-                    System.out.println("来自服务器: " + fromServer);
-                    
-                    if (fromServer.equals("Bye.")) {
-                        sbye = true;
-                    }
-                }
-            }
-
-            // 如果用户没有结束，检查是否有输入
-            if (!ubye) {
-                if (stdIn.ready()) { // 检查标准输入是否有数据可读
-                    System.out.print("客户端输入:");
-                    fromUser = stdIn.readLine();
-                    
-                    out.println(fromUser);
-                    out.flush();
-                    
-                    if (fromUser.equals("Bye.")) {
-                        ubye = true;
-                    }
-                }
-            }
-
-            // 短暂休眠，避免CPU过度占用
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
-            // 如果双方都发送了结束消息，退出循环
-            if (ubye && sbye) {
-                break;
+    private void disconnectFromServer() {
+        try {
+            if (out != null) {
+                out.println("Bye.");
+                out.flush();
             }
             
-            // 如果服务器单方面断开连接，也退出循环
-            if (sbye && !ubye) {
-                System.out.println("服务器已断开连接");
-                break;
+            if (in != null) in.close();
+            if (out != null) out.close();
+            if (client != null) client.close();
+            
+            connected = false;
+            connectButton.setText("连接");
+            sendButton.setEnabled(false);
+            serverField.setEnabled(true);
+            portField.setEnabled(true);
+            appendMessage("已断开与服务器的连接");
+            
+        } catch (IOException ex) {
+            appendMessage("错误: 断开连接时发生异常");
+        }
+    }
+
+    private void sendMessage() {
+        String message = inputField.getText().trim();
+        if (!message.isEmpty() && out != null) {
+            out.println(message);
+            out.flush();
+            appendMessage("我: " + message);
+            inputField.setText("");
+            
+            // 如果发送了结束消息，自动断开连接
+            if (message.equals("Bye.")) {
+                try {
+                    Thread.sleep(100); // 等待服务器响应
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                }
+                disconnectFromServer();
             }
         }
+    }
 
-		// 关闭所有流和套接字
-		out.close();
-		in.close();
-		stdIn.close();
-		client.close();
-		System.out.println("客户端已断开连接");
+    private void startReceiveThread() {
+        Thread receiveThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    String fromServer;
+                    while ((fromServer = in.readLine()) != null && connected) {
+                        final String message = fromServer;
+                        SwingUtilities.invokeLater(new Runnable() {
+                            @Override
+                            public void run() {
+                                appendMessage("服务器: " + message);
+                                
+                                if (message.equals("Bye.")) {
+                                    disconnectFromServer();
+                                }
+                            }
+                        });
+                    }
+                } catch (IOException ex) {
+                    if (connected) { 
+                        SwingUtilities.invokeLater(new Runnable() {
+                            @Override
+                            public void run() {
+                                appendMessage("错误: 与服务器的连接已断开");
+                                disconnectFromServer();
+                            }
+                        });
+                    }
+                }
+            }
+        });
+        receiveThread.setDaemon(true); 
+        receiveThread.start();
+    }
+
+    private void appendMessage(final String message) {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                messageArea.append(message + "\n");
+                messageArea.setCaretPosition(messageArea.getDocument().getLength());
+            }
+        });
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                new SingleTalkClient();
+            }
+        });
     }
 }
